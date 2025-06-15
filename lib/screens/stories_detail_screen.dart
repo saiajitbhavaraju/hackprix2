@@ -1,31 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
-import 'package:cached_network_image/cached_network_image.dart'; // Added for image display
-import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // Modern package for FontAwesome icons
+// REMOVED: import 'package:video_player/video_player.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-// --- Placeholder Colors ---
 import 'package:ecosnap_1/common/colors.dart';
 
-// ---
-
 class StoryDetailScreen extends StatefulWidget {
+  // videoUrl is still passed but will not be used for playback
   final String videoUrl;
-  // This will represent the entire story item, similar to how ProductDetailScreen
-  // receives an 'item' map.
   final Map<String, dynamic> item;
 
   const StoryDetailScreen({
     Key? key,
     required this.videoUrl,
-    // Provide a default or ensure this is passed from the calling screen (StoriesScreen)
-    this.item = const {
-      'imageUrl': 'https://via.placeholder.com/400x300.png?text=Story+Image',
-      'name': 'Sample Story Title',
-      'cost': 'FREE',
-      'description': 'This is a captivating story about nature and its beauty. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-      'location': 'Hyderabad, India', // Dummy data for location
-      'postedBy': 'EcoUser', // Dummy data for postedBy
-    },
+    required this.item,
   }) : super(key: key);
 
   @override
@@ -33,103 +21,82 @@ class StoryDetailScreen extends StatefulWidget {
 }
 
 class _StoryDetailScreenState extends State<StoryDetailScreen> {
-  late VideoPlayerController _controller;
+  // REMOVED: late VideoPlayerController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset(widget.videoUrl)
-      ..initialize().then((_) {
-        if (mounted) {
-          setState(() {});
-          _controller.play();
-        }
-      });
-
-    _controller.setLooping(true);
+    // REMOVED: _controller initialization and playback logic
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    // REMOVED: _controller.dispose();
     super.dispose();
+  }
+
+  // Helper function to determine if a path is a local asset
+  bool _isLocalAsset(String? path) {
+    return path != null && path.startsWith('assets/');
   }
 
   @override
   Widget build(BuildContext context) {
-    // Determine if the image URL is valid and an absolute path
-    final imageUrl = widget.item['imageUrl'] as String?;
-    final isValidImageUrl = imageUrl != null && Uri.tryParse(imageUrl)?.hasAbsolutePath == true;
+    final imageUrl = widget.item['imageUrl'] as String?; // This is the local asset path from stories_json
 
     return Scaffold(
-      backgroundColor: white, // Changed to white to match ProductDetailScreen's background for consistency
+      backgroundColor: white,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 400.0, // Increased height for image/video area
+            expandedHeight: 400.0,
             floating: false,
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Background Image (or placeholder)
-                  isValidImageUrl
-                      ? CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: Colors.grey[200],
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: Colors.grey[200],
-                            child: const Center(
-                              child: Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
-                            ),
-                          ),
-                        )
-                      : Container(
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: Icon(Icons.image, size: 80, color: Colors.grey),
-                          ),
-                        ),
-                  // Video Player Overlay
-                  if (_controller.value.isInitialized)
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _controller.value.isPlaying
-                              ? _controller.pause()
-                              : _controller.play();
-                        });
-                      },
-                      child: AspectRatio(
-                        aspectRatio: _controller.value.aspectRatio,
-                        child: VideoPlayer(_controller),
-                      ),
-                    ),
-                  // Play/Pause button for the video
-                  if (_controller.value.isInitialized && !_controller.value.isPlaying)
-                    Center(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 50),
-                          onPressed: () {
-                            setState(() {
-                              _controller.play();
-                            });
-                          },
+                  // Display the image from imageUrl (which is now a local asset path)
+                  if (_isLocalAsset(imageUrl))
+                    Image.asset(
+                      imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
                         ),
                       ),
+                    )
+                  else if (imageUrl != null && Uri.tryParse(imageUrl)?.hasAbsolutePath == true)
+                    // Fallback to CachedNetworkImage if, for some reason, it's still a network URL
+                    CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
+                        ),
+                      ),
+                    )
+                  else
+                    Container( // Generic placeholder if no valid image path
+                      color: Colors.grey[200],
+                      child: const Center(
+                        child: Icon(Icons.image, size: 80, color: Colors.grey),
+                      ),
                     ),
+
+                  // REMOVED: VideoPlayer and its controls
+                  // REMOVED: Play/Pause button for the video
+
                   // Gradient overlay to make text more readable
                   Container(
                     decoration: BoxDecoration(
@@ -175,12 +142,14 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        widget.item['name'] ?? 'Story Title',
-                        style: const TextStyle(
-                          fontSize: 24.0,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                      Expanded( // Added Expanded for text overflow
+                        child: Text(
+                          widget.item['name'] ?? 'Story Title',
+                          style: const TextStyle(
+                            fontSize: 24.0,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
                         ),
                       ),
                       Text(
@@ -251,14 +220,14 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red[600], // Example primary color
+                        backgroundColor: Colors.blue[600],
                         padding: const EdgeInsets.symmetric(vertical: 14.0),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10.0),
                         ),
                       ),
                       child: const Text(
-                        'Contact User',
+                        'Contact Storyteller',
                         style: TextStyle(
                           fontSize: 18.0,
                           fontWeight: FontWeight.bold,

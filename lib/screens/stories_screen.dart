@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:provider/provider.dart'; // We will mock this for UI consistency
+import 'package:provider/provider.dart';
 
 import 'package:ecosnap_1/common/colors.dart';
 import 'package:ecosnap_1/data/stories_json.dart';
 import 'package:ecosnap_1/screens/stories_detail_screen.dart';
 import 'package:page_transition/page_transition.dart';
 
-// --- Dummy AuthService and MarketplaceProvider for UI compilation ---
-// These classes are here purely to satisfy the Provider.of calls for UI structure.
-// They do not perform any actual authentication or data fetching.
+// --- Dummy AuthService for UI compilation ---
 class DummyAuthService {
   Future<void> signOut() async {
     print('Dummy sign out called');
   }
+}
+
+// REMOVED: _generatePlaceholderImageUrl as we're using local assets now
+
+// Simplified _getStoryVideoUrl as video playback is removed from detail screen
+// This function primarily ensures the 'videoUrl' key exists in the 'item' map.
+String _getStoryVideoUrl(String? originalVideoUrl) {
+  return originalVideoUrl ?? 'https://example.com/default_dummy_video.mp4';
 }
 
 class DummyMarketplaceProvider extends ChangeNotifier {
@@ -27,27 +33,31 @@ class DummyMarketplaceProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get items => _items;
 
   DummyMarketplaceProvider() {
-    _items =
-        stories_data.map((story) {
-          return {
-            'imageUrl': story['img'],
-            'name': story['name'],
-            'cost':
-                'FREE', // Stories don't have a cost, so we set a dummy value
-            'description': story['date'], // Using date as description for now
-            // Add other fields from stories_data if needed
-            'videoUrl': story['videoUrl'],
-          };
-        }).toList();
+    _items = stories_data.asMap().entries.map((entry) {
+      final int index = entry.key;
+      final Map<String, dynamic> story = entry.value;
+
+      final int seed = story['id'] ?? (index + 1); // Keep seed for other dummy data if needed
+
+      return {
+        'imageUrl': story['img'], // <<< NOW USING LOCAL ASSET PATH FROM stories_json.dart
+        'name': story['name'] ?? 'Untitled Story',
+        'cost': '50',
+        'description': story['date'] ?? 'No Date',
+        'videoUrl': _getStoryVideoUrl(story['videoUrl']), // Keep the field for consistency
+        'location': 'World',
+        'postedBy': story['nickname'] ?? 'StoryTeller_${seed}',
+      };
+    }).toList();
   }
 
   void fetchItems() {
-    // In a real scenario, this would fetch data.
-    // Here, we already populate _items in the constructor.
-    print('Dummy fetchItems called');
+    print('Dummy fetchItems called for StoriesScreen');
+    notifyListeners();
   }
 }
 // --- End Dummy Classes ---
+
 
 class StoriesScreen extends StatefulWidget {
   const StoriesScreen({super.key});
@@ -62,19 +72,14 @@ class _StoriesScreenState extends State<StoriesScreen> {
   int _selectedCategoryIndex = 0;
 
   final List<String> _categories = [
-    'All',
-    'Trending',
-    'Nature',
-    'Travel',
-    'Lifestyle',
+    'All', 'Trending', 'Nature', 'Travel', 'Lifestyle'
   ];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // We don't actually need to fetch anything here for stories,
-      // as the data is local (stories_json.dart)
+      Provider.of<DummyMarketplaceProvider>(context, listen: false).fetchItems();
     });
   }
 
@@ -86,18 +91,14 @@ class _StoriesScreenState extends State<StoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // We use a MultiProvider to inject the dummy providers for UI consistency
-    // with MarketplaceScreen, even though they don't perform real operations here.
     return MultiProvider(
       providers: [
         Provider<DummyAuthService>(create: (_) => DummyAuthService()),
         ChangeNotifierProvider<DummyMarketplaceProvider>(
-          create: (_) => DummyMarketplaceProvider(),
-        ),
+            create: (_) => DummyMarketplaceProvider()),
       ],
       child: Scaffold(
-        backgroundColor:
-            white, // Assuming 'white' is defined in your colors.dart
+        backgroundColor: white,
         appBar: AppBar(
           toolbarHeight: 120,
           flexibleSpace: SafeArea(
@@ -113,26 +114,18 @@ class _StoriesScreenState extends State<StoriesScreen> {
                           controller: _searchController,
                           decoration: InputDecoration(
                             hintText: 'Search stories',
-                            prefixIcon: const Icon(
-                              Icons.search,
-                              color: Colors.grey,
-                            ),
+                            prefixIcon: const Icon(Icons.search, color: Colors.grey),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(30.0),
                               borderSide: BorderSide.none,
                             ),
                             filled: true,
                             fillColor: Colors.grey[200],
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 10.0,
-                              horizontal: 20.0,
-                            ),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
                           ),
                           onSubmitted: (value) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Searching for stories: $value'),
-                              ),
+                              SnackBar(content: Text('Searching for stories: $value')),
                             );
                           },
                         ),
@@ -147,11 +140,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                           icon: const Icon(Icons.tune, color: Colors.grey),
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Filter functionality not yet implemented for stories.',
-                                ),
-                              ),
+                              const SnackBar(content: Text('Filter functionality not yet implemented for stories.')),
                             );
                           },
                         ),
@@ -172,38 +161,22 @@ class _StoriesScreenState extends State<StoriesScreen> {
                               _selectedCategoryIndex = index;
                             });
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Selected story category: ${_categories[index]}',
-                                ),
-                              ),
+                              SnackBar(content: Text('Selected story category: ${_categories[index]}')),
                             );
                           },
                           child: Container(
                             alignment: Alignment.center,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20.0,
-                              vertical: 8.0,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
                             margin: const EdgeInsets.only(right: 8.0),
                             decoration: BoxDecoration(
-                              color:
-                                  isSelected
-                                      ? Colors.red[600]
-                                      : Colors.grey[200],
+                              color: isSelected ? Colors.red[600] : Colors.grey[200],
                               borderRadius: BorderRadius.circular(20.0),
                             ),
                             child: Text(
                               _categories[index],
                               style: TextStyle(
-                                color:
-                                    isSelected
-                                        ? Colors.white
-                                        : Colors.grey[700],
-                                fontWeight:
-                                    isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
+                                color: isSelected ? Colors.white : Colors.grey[700],
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                               ),
                             ),
                           ),
@@ -218,12 +191,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
           actions: [
             Builder(
               builder: (context) {
-                // We access the dummy authService here for UI consistency,
-                // but its signOut method is a no-op.
-                final dummyAuthService = Provider.of<DummyAuthService>(
-                  context,
-                  listen: false,
-                );
+                final dummyAuthService = Provider.of<DummyAuthService>(context, listen: false);
                 return IconButton(
                   icon: const Icon(Icons.logout),
                   onPressed: () async {
@@ -234,8 +202,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
                   },
                   color: Colors.black,
                 );
-              },
-            ),
+              }
+            )
           ],
         ),
         body: Consumer<DummyMarketplaceProvider>(
@@ -262,9 +230,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
                   itemCount: dummyMarketplace.items.length,
                   itemBuilder: (context, index) {
                     final item = dummyMarketplace.items[index];
-                    final imageUrl = item['imageUrl'] as String?;
-                    final randomHeight =
-                        140 + (index % 3) * 20; // Maintain varied heights
+                    final imageUrl = item['imageUrl'] as String?; // This is now the local asset path
+                    final randomHeight = 140 + (index % 3) * 20;
 
                     return GestureDetector(
                       onTap: () {
@@ -273,8 +240,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
                             type: PageTransitionType.scale,
                             alignment: Alignment.bottomCenter,
                             child: StoryDetailScreen(
-                              videoUrl:
-                                  item['videoUrl'], // Use the videoUrl from the mapped item
+                              videoUrl: item['videoUrl'], // This will no longer be used for video playback
+                              item: item, // Pass the entire item
                             ),
                           ),
                         );
@@ -288,78 +255,69 @@ class _StoriesScreenState extends State<StoriesScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            imageUrl != null &&
-                                    Uri.tryParse(imageUrl)?.hasAbsolutePath ==
-                                        true
-                                ? CachedNetworkImage(
-                                  imageUrl: imageUrl,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
+                            if (imageUrl != null && imageUrl.startsWith('assets/')) // Check if it's a local asset
+                              Image.asset(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: randomHeight.toDouble(),
+                                errorBuilder: (context, error, stackTrace) => Container(
                                   height: randomHeight.toDouble(),
-                                  placeholder:
-                                      (context, url) => Container(
-                                        height: randomHeight.toDouble(),
-                                        color: Colors.grey[200],
-                                        child: const Center(
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        ),
-                                      ),
-                                  errorWidget:
-                                      (context, url, error) => Container(
-                                        height: randomHeight.toDouble(),
-                                        color: Colors.grey[200],
-                                        child: const Center(
-                                          child: Icon(
-                                            Icons.image_not_supported,
-                                            size: 50,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ),
-                                )
-                                : Container(
-                                  height: 150,
                                   color: Colors.grey[200],
                                   child: const Center(
-                                    child: Icon(
-                                      Icons.image,
-                                      size: 50,
-                                      color: Colors.grey,
-                                    ),
+                                    child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
                                   ),
                                 ),
+                              )
+                            else if (imageUrl != null && Uri.tryParse(imageUrl)?.hasAbsolutePath == true)
+                              CachedNetworkImage( // Fallback to network image if it's a URL
+                                imageUrl: imageUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: randomHeight.toDouble(),
+                                placeholder: (context, url) => Container(
+                                  height: randomHeight.toDouble(),
+                                  color: Colors.grey[200],
+                                  child: const Center(
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  height: randomHeight.toDouble(),
+                                  color: Colors.grey[200],
+                                  child: const Center(
+                                    child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                height: 150,
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: Icon(Icons.image, size: 50, color: Colors.grey),
+                                ),
+                              ),
                             Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        '\$${item['cost']}', // Dummy cost for UI consistency
+                                        '\$${item['cost']}',
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 18.0,
                                         ),
                                       ),
                                       IconButton(
-                                        icon: Icon(
-                                          Icons.star_border,
-                                          color: Colors.grey[700],
-                                        ),
+                                        icon: Icon(Icons.star_border, color: Colors.grey[700]),
                                         onPressed: () {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'Added ${item['name']} to favorites!',
-                                              ),
-                                            ),
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Added ${item['name']} to favorites!')),
                                           );
                                         },
                                         padding: EdgeInsets.zero,
@@ -380,10 +338,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                                   const SizedBox(height: 4.0),
                                   Text(
                                     item['description'] ?? 'No Description',
-                                    style: const TextStyle(
-                                      fontSize: 12.0,
-                                      color: Colors.grey,
-                                    ),
+                                    style: const TextStyle(fontSize: 12.0, color: Colors.grey),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
