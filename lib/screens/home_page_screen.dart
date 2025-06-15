@@ -1,3 +1,6 @@
+// lib/screens/home_page_screen.dart
+// NO CHANGES WERE NEEDED FOR THIS FILE.
+
 import 'package:flutter/material.dart';
 import 'package:ecosnap_1/common/colors.dart';
 import 'package:ecosnap_1/screens/camera_screen.dart';
@@ -7,9 +10,8 @@ import 'package:ecosnap_1/screens/map_screen.dart';
 import 'package:ecosnap_1/screens/stories_screen.dart';
 
 class HomePageScreen extends StatefulWidget {
-  // Add a parameter to control the starting page.
   final int initialPageIndex;
-  const HomePageScreen({Key? key, this.initialPageIndex = 2}) : super(key: key); // Default to Camera
+  const HomePageScreen({Key? key, this.initialPageIndex = 2}) : super(key: key);
 
   @override
   _HomePageScreenState createState() => _HomePageScreenState();
@@ -18,23 +20,20 @@ class HomePageScreen extends StatefulWidget {
 class _HomePageScreenState extends State<HomePageScreen> {
   late int _pageIndex;
 
-  // List of pages to be displayed in the body
   final List<Widget> _pages = [
-    MapScreen(),
-    ChatScreen(),
-    CameraScreen(),
-    StoriesScreen(),
-    DiscoverScreen(),
+    const MapScreen(),
+    const ChatScreen(),
+    const CameraScreen(),
+    const StoriesScreen(),
+    const DiscoverScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
-    // Set the initial page index from the widget's properties.
     _pageIndex = widget.initialPageIndex;
   }
 
-  /// Changes the selected page index and rebuilds the widget.
   void _onTabTapped(int index) {
     setState(() {
       _pageIndex = index;
@@ -52,9 +51,7 @@ class _HomePageScreenState extends State<HomePageScreen> {
     );
   }
 
-  /// Builds the custom bottom navigation bar for the application.
   Widget _buildBottomNavigationBar() {
-    // Defines the properties for each navigation item.
     final List<Map<String, dynamic>> navItems = [
       {'icon': Icons.map_outlined, 'text': 'Map', 'color': green},
       {'icon': Icons.chat_bubble_outline, 'text': 'Chat', 'color': blue},
@@ -65,11 +62,11 @@ class _HomePageScreenState extends State<HomePageScreen> {
 
     return Container(
       width: double.infinity,
-      height: 90, // Standard height for bottom nav bar with labels
+      height: 90,
       decoration: const BoxDecoration(
         color: Colors.black,
         border: Border(
-          top: BorderSide(width: 1, color: Colors.white12), // Subtle top border
+          top: BorderSide(width: 1, color: Colors.white12),
         ),
       ),
       child: Padding(
@@ -94,7 +91,6 @@ class _HomePageScreenState extends State<HomePageScreen> {
     );
   }
 
-  /// Builds a single item for the navigation bar.
   Widget _buildNavItem({
     required IconData icon,
     required String text,
@@ -107,7 +103,6 @@ class _HomePageScreenState extends State<HomePageScreen> {
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        // Removes splash effect for a cleaner look
         splashColor: Colors.transparent,
         highlightColor: Colors.transparent,
         child: Column(

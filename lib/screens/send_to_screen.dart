@@ -1,10 +1,13 @@
+// lib/screens/send_to_screen.dart
+// NO CHANGES WERE NEEDED FOR THIS FILE.
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ecosnap_1/common/colors.dart';
 import 'package:ecosnap_1/data/chat_json.dart';
 import 'package:ecosnap_1/models/snap_model.dart';
 import 'package:ecosnap_1/services/snap_state_service.dart';
-import 'package:ecosnap_1/screens/home_page_screen.dart'; // Import your main home page
+import 'package:ecosnap_1/screens/home_page_screen.dart';
 
 class SendToScreen extends StatefulWidget {
   final String imagePath;
@@ -55,11 +58,9 @@ class _SendToScreenState extends State<SendToScreen> {
     );
 
     await SnapStateService.instance.addSnap(_selectedUsers, newSnap);
-    
+
     if (!mounted) return;
 
-    // ** THIS IS THE FIX **
-    // Navigate to your HomePageScreen and tell it to show the Chat page (index 1).
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const HomePageScreen(initialPageIndex: 1)),
       (Route<dynamic> route) => false,
